@@ -148,6 +148,84 @@ $icons  = ['bi-clock','bi-gear','bi-truck','bi-house-check'];
                 <i class="bi bi-truck" style="color:var(--accent)"></i> Payment at Delivery
             </div>
         </div>
+        <!-- Tracking -->
+        <?php if (in_array($order['status'], ['shipped','delivered']) && !empty($order['tracking_number'])): ?>
+        <?php
+            $exp_urls  = ['jne'=>'https://www.jne.co.id/id/tracking/trace/','jnt'=>'https://www.jet.co.id/track/','sicepat'=>'https://www.sicepat.com/checkAwb/','pos'=>'https://www.posindonesia.co.id/id/tracking/','tiki'=>'https://tiki.id/id/tracking?awb=','anteraja'=>'https://anteraja.id/tracking/','ninja'=>'https://www.ninjaxpress.co/id-id/tracking?id='];
+            $exp_names = ['jne'=>'JNE','jnt'=>'J&T Express','sicepat'=>'SiCepat','pos'=>'Pos Indonesia','tiki'=>'TIKI','anteraja'=>'AnterAja','ninja'=>'Ninja Express'];
+            $exp_logos = ['jne'=>'🟥','jnt'=>'🟧','sicepat'=>'🟦','pos'=>'🟩','tiki'=>'🟫','anteraja'=>'🟪','ninja'=>'⬛'];
+            $t_url     = ($exp_urls[$order['expedition']] ?? '#') . strtoupper($order['tracking_number']);
+            $t_name    = $exp_names[$order['expedition']] ?? strtoupper($order['expedition'] ?? '');
+            $t_logo    = $exp_logos[$order['expedition']] ?? '📦';
+
+            // Simulasi timeline lacak paket (data bodong)
+            $fake_events = [];
+            $base_time   = strtotime($order['created_at']);
+            if ($order['status'] === 'shipped' || $order['status'] === 'delivered') {
+                $fake_events[] = ['time' => date('d M Y, H:i', $base_time + 3600),        'desc' => 'Pesanan diambil oleh kurir ' . $t_name,         'loc' => 'Gudang ' . $t_name . ' Pusat'];
+                $fake_events[] = ['time' => date('d M Y, H:i', $base_time + 7200),        'desc' => 'Paket tiba di hub sortir',                        'loc' => $t_name . ' Sorting Center'];
+                $fake_events[] = ['time' => date('d M Y, H:i', $base_time + 18000),       'desc' => 'Paket dalam perjalanan ke kota tujuan',           'loc' => $t_name . ' Transit Hub'];
+            }
+            if ($order['status'] === 'delivered') {
+                $fake_events[] = ['time' => date('d M Y, H:i', $base_time + 72000),       'desc' => 'Paket tiba di cabang tujuan',                     'loc' => $t_name . ' Cabang Lokal'];
+                $fake_events[] = ['time' => date('d M Y, H:i', $base_time + 86400),       'desc' => 'Paket sedang diantar oleh kurir',                 'loc' => 'Dalam Pengiriman'];
+                $fake_events[] = ['time' => date('d M Y, H:i', $base_time + 90000),       'desc' => 'Paket telah diterima',                            'loc' => 'Alamat Tujuan'];
+            }
+            $fake_events = array_reverse($fake_events);
+        ?>
+        <div style="background:var(--bg-card);border:1px solid rgba(59,130,246,.25);border-radius:12px;overflow:hidden">
+            <!-- Header kartu -->
+            <div style="padding:14px 18px;background:rgba(59,130,246,.07);border-bottom:1px solid rgba(59,130,246,.15);display:flex;align-items:center;justify-content:space-between">
+                <div style="display:flex;align-items:center;gap:8px">
+                    <i class="bi bi-truck" style="color:var(--accent);font-size:1rem"></i>
+                    <span style="font-size:.75rem;text-transform:uppercase;letter-spacing:.08em;color:var(--accent);font-weight:600">Lacak Paket</span>
+                </div>
+                <span style="font-size:.7rem;color:var(--text-muted);background:var(--bg-base);padding:2px 8px;border-radius:999px;border:1px solid var(--border)"><?= $t_name ?></span>
+            </div>
+
+            <div style="padding:14px 18px">
+                <!-- Nomor resi -->
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;padding:10px 12px;background:var(--bg-base);border:1px solid var(--border);border-radius:8px">
+                    <div>
+                        <div style="font-size:.68rem;color:var(--text-muted);margin-bottom:2px">No. Resi</div>
+                        <div style="font-family:monospace;font-size:.88rem;font-weight:700;color:var(--text-primary);letter-spacing:.05em"><?= htmlspecialchars(strtoupper($order['tracking_number'])) ?></div>
+                    </div>
+                    <button onclick="copyResi('<?= htmlspecialchars(strtoupper($order['tracking_number'])) ?>')"
+                            id="copyBtn"
+                            style="padding:5px 10px;background:var(--accent-soft);color:var(--accent);border:none;border-radius:6px;font-size:.72rem;cursor:pointer;display:flex;align-items:center;gap:4px">
+                        <i class="bi bi-copy" id="copyIcon"></i> <span id="copyText">Salin</span>
+                    </button>
+                </div>
+
+                <!-- Timeline bodong -->
+                <div style="margin-bottom:14px">
+                    <div style="font-size:.7rem;color:var(--text-muted);margin-bottom:10px;text-transform:uppercase;letter-spacing:.06em">Riwayat Pengiriman</div>
+                    <div style="position:relative;padding-left:20px">
+                        <!-- Garis vertikal -->
+                        <div style="position:absolute;left:6px;top:8px;bottom:8px;width:1px;background:var(--border)"></div>
+                        <?php foreach ($fake_events as $ei => $ev): ?>
+                        <div style="position:relative;margin-bottom:<?= $ei < count($fake_events)-1 ? '14px' : '0' ?>">
+                            <!-- Dot -->
+                            <div style="position:absolute;left:-17px;top:4px;width:10px;height:10px;border-radius:50%;background:<?= $ei === 0 ? 'var(--accent)' : 'var(--bg-base)' ?>;border:2px solid <?= $ei === 0 ? 'var(--accent)' : 'var(--border)' ?>"></div>
+                            <div style="font-size:.78rem;font-weight:<?= $ei === 0 ? '600' : '400' ?>;color:<?= $ei === 0 ? 'var(--text-primary)' : 'var(--text-secondary)' ?>"><?= $ev['desc'] ?></div>
+                            <div style="font-size:.68rem;color:var(--text-muted);margin-top:1px"><?= $ev['loc'] ?> &middot; <?= $ev['time'] ?></div>
+                        </div>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+
+                <!-- Tombol cek di website ekspedisi -->
+                <a href="<?= $t_url ?>" target="_blank"
+                   style="display:flex;align-items:center;justify-content:center;gap:7px;padding:9px;background:var(--accent);color:#fff;border-radius:8px;text-decoration:none;font-size:.8rem;font-weight:600">
+                    <i class="bi bi-box-arrow-up-right"></i> Cek di Website <?= $t_name ?>
+                </a>
+                <div style="text-align:center;margin-top:6px;font-size:.68rem;color:var(--text-muted)">
+                    Riwayat di atas adalah simulasi. Klik tombol untuk tracking resmi.
+                </div>
+            </div>
+        </div>
+        <?php endif; ?>
+
         <!-- Update -->
         <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:18px">
             <div style="font-size:.75rem;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);margin-bottom:6px">Terakhir diperbarui</div>
@@ -155,5 +233,20 @@ $icons  = ['bi-clock','bi-gear','bi-truck','bi-house-check'];
         </div>
     </div>
 </div>
+
+<?php
+$extra_js = '<script>
+function copyResi(text) {
+    navigator.clipboard.writeText(text).then(() => {
+        document.getElementById("copyIcon").className = "bi bi-check-lg";
+        document.getElementById("copyText").textContent = "Tersalin!";
+        setTimeout(() => {
+            document.getElementById("copyIcon").className = "bi bi-copy";
+            document.getElementById("copyText").textContent = "Salin";
+        }, 2000);
+    });
+}
+</script>';
+?>
 
 <?php require_once __DIR__ . '/../../includes/footer.php'; ?>

@@ -182,18 +182,52 @@ while ($row = $all_items_raw->fetch_assoc()) {
 
 <!-- ══ MODAL UPDATE STATUS ══ -->
 <div id="statusModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:999;align-items:center;justify-content:center">
-    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:28px;width:100%;max-width:400px;margin:16px">
+    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:28px;width:100%;max-width:420px;margin:16px">
         <h3 style="font-family:'Lora',serif;font-size:1.1rem;margin-bottom:16px">Update Status Pesanan</h3>
         <form method="POST" action="<?= BASE_URL ?>admin/orders/update_status.php">
             <input type="hidden" name="order_id" id="modalOrderId">
             <div class="mb-field">
                 <label class="form-label">Status Baru</label>
-                <select name="status" id="modalStatus" class="form-select">
+                <select name="status" id="modalStatus" class="form-select" onchange="toggleTrackingFields()">
                     <?php foreach ($allowed_statuses as $s): ?>
                     <option value="<?= $s ?>"><?= ucfirst($s) ?></option>
                     <?php endforeach; ?>
                 </select>
             </div>
+
+            <!-- Field resi — hanya muncul saat status = shipped -->
+            <div id="trackingFields" style="display:none;border:1px solid var(--border);border-radius:8px;padding:14px;background:var(--bg-base);margin-bottom:14px">
+                <div style="font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;color:var(--accent);margin-bottom:10px;display:flex;align-items:center;gap:5px">
+                    <i class="bi bi-truck"></i> Info Pengiriman
+                </div>
+                <div class="mb-field" style="margin-bottom:10px">
+                    <label class="form-label">Ekspedisi</label>
+                    <select name="expedition" id="modalExpedition" class="form-select" onchange="updateTrackingLink()">
+                        <option value="">-- Pilih Ekspedisi --</option>
+                        <option value="jne">JNE</option>
+                        <option value="jnt">J&T Express</option>
+                        <option value="sicepat">SiCepat</option>
+                        <option value="pos">Pos Indonesia</option>
+                        <option value="tiki">TIKI</option>
+                        <option value="anteraja">AnterAja</option>
+                        <option value="ninja">Ninja Express</option>
+                    </select>
+                </div>
+                <div class="mb-field" style="margin-bottom:0">
+                    <label class="form-label">Nomor Resi</label>
+                    <input type="text" name="tracking_number" id="modalTracking"
+                           class="form-control" placeholder="contoh: JNE1234567890"
+                           oninput="updateTrackingLink()" style="text-transform:uppercase">
+                </div>
+                <div id="trackingPreview" style="margin-top:8px;display:none">
+                    <a id="trackingLink" href="#" target="_blank"
+                       style="font-size:.75rem;color:var(--accent);display:inline-flex;align-items:center;gap:5px">
+                        <i class="bi bi-box-arrow-up-right"></i>
+                        <span id="trackingLinkText">Lihat preview link lacak</span>
+                    </a>
+                </div>
+            </div>
+
             <div style="display:flex;gap:8px">
                 <button type="submit" class="btn-save"><i class="bi bi-check-lg"></i> Simpan</button>
                 <button type="button" class="btn-cancel" onclick="closeModal()" style="margin:0">Batal</button>
@@ -223,6 +257,8 @@ while ($o = $orders2->fetch_assoc()) {
         'total_price'      => $o['total_price'],
         'shipping_address' => $o['shipping_address'],
         'status'           => $o['status'],
+        'expedition'       => $o['expedition'] ?? '',
+        'tracking_number'  => $o['tracking_number'] ?? '',
         'created_at'       => date('d M Y, H:i', strtotime($o['created_at'])),
         'items'            => $order_items_map[$o['id']] ?? [],
     ];
@@ -240,88 +276,8 @@ $extra_js = '<script>
 const ORDERS = ' . json_encode($orders_json) . ';
 const BASE_URL = "' . BASE_URL . '";
 const STATUS_LABEL = ' . json_encode($status_label) . ';
-
-function formatRp(n) {
-    return "Rp " + parseInt(n).toLocaleString("id-ID");
-}
-
-function openDetail(id) {
-    const o = ORDERS[id];
-    if (!o) return;
-
-    document.getElementById("detailTitle").textContent = "Detail Pesanan #" + o.id;
-
-    const sl = STATUS_LABEL[o.status] || {label: o.status, color: "#fff"};
-
-    let itemsHtml = "";
-    o.items.forEach(item => {
-        const coverHtml = item.cover
-            ? `<img src="${BASE_URL}assets/uploads/covers/${item.cover}" style="width:100%;height:100%;object-fit:cover">`
-            : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center"><i class="bi bi-book" style="color:var(--text-muted);font-size:.7rem"></i></div>`;
-        itemsHtml += `
-        <div style="display:flex;gap:12px;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)">
-            <div style="width:40px;height:52px;border-radius:5px;overflow:hidden;flex-shrink:0;background:var(--bg-base);border:1px solid var(--border)">${coverHtml}</div>
-            <div style="flex:1;min-width:0">
-                <div style="font-size:.83rem;font-weight:500;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${item.title}</div>
-                <div style="font-size:.72rem;color:var(--text-muted);margin-top:2px">${item.author}</div>
-            </div>
-            <div style="text-align:right;flex-shrink:0">
-                <div style="font-size:.75rem;color:var(--text-muted)">×${item.quantity}</div>
-                <div style="font-size:.82rem;font-weight:600;color:var(--accent)">${formatRp(item.price * item.quantity)}</div>
-            </div>
-        </div>`;
-    });
-
-    document.getElementById("detailBody").innerHTML = `
-        <!-- Info user -->
-        <div style="background:var(--bg-base);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:16px">
-            <div style="font-size:.68rem;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);margin-bottom:8px">Informasi Pembeli</div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:.8rem">
-                <div><div style="color:var(--text-muted);font-size:.7rem">Nama</div><div style="color:var(--text-primary);font-weight:500;margin-top:2px">${o.user_name}</div></div>
-                <div><div style="color:var(--text-muted);font-size:.7rem">Email</div><div style="color:var(--text-primary);margin-top:2px">${o.user_email}</div></div>
-                <div><div style="color:var(--text-muted);font-size:.7rem">No. HP</div><div style="color:var(--text-primary);margin-top:2px">${o.user_phone}</div></div>
-                <div><div style="color:var(--text-muted);font-size:.7rem">Tanggal</div><div style="color:var(--text-primary);margin-top:2px">${o.created_at}</div></div>
-            </div>
-            <div style="margin-top:8px"><div style="color:var(--text-muted);font-size:.7rem">Alamat Pengiriman</div><div style="color:var(--text-primary);font-size:.8rem;margin-top:2px;line-height:1.5">${o.shipping_address}</div></div>
-        </div>
-
-        <!-- Status -->
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-            <span style="font-size:.78rem;color:var(--text-muted)">Status Pesanan</span>
-            <span style="background:${sl.color}22;color:${sl.color};padding:4px 12px;border-radius:999px;font-size:.72rem;font-weight:600">${sl.label}</span>
-        </div>
-
-        <!-- Items -->
-        <div style="font-size:.68rem;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);margin-bottom:4px">Buku Dipesan</div>
-        <div>${itemsHtml}</div>
-
-        <!-- Total -->
-        <div style="display:flex;justify-content:space-between;align-items:center;padding-top:12px;margin-top:4px">
-            <span style="font-size:.83rem;color:var(--text-muted)">Total Pembayaran</span>
-            <span style="font-size:1.05rem;font-weight:700;color:var(--accent)">${formatRp(o.total_price)}</span>
-        </div>
-        <div style="font-size:.72rem;color:var(--text-muted);text-align:right;margin-top:2px">
-            <i class="bi bi-truck"></i> Payment at Delivery
-        </div>
-    `;
-
-    document.getElementById("detailModal").style.display = "flex";
-}
-
-function closeDetail() {
-    document.getElementById("detailModal").style.display = "none";
-}
-
-function openModal(id, status) {
-    document.getElementById("modalOrderId").value = id;
-    document.getElementById("modalStatus").value  = status;
-    document.getElementById("statusModal").style.display = "flex";
-}
-
-function closeModal() {
-    document.getElementById("statusModal").style.display = "none";
-}
-</script>';
+</script>
+<script src="' . BASE_URL . 'admin/orders/orders.js"></script>';
 ?>
 
 <?php require_once __DIR__ . '/../../admin/includes/footer.php'; ?>

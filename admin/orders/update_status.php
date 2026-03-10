@@ -6,6 +6,8 @@ requireAdmin();
 
 $order_id   = (int)($_POST['order_id'] ?? 0);
 $new_status = $_POST['status'] ?? '';
+$expedition = trim($_POST['expedition'] ?? '');
+$tracking   = trim($_POST['tracking_number'] ?? '');
 $allowed    = ['pending','processing','shipped','delivered','cancelled'];
 
 if (!$order_id || !in_array($new_status, $allowed)) {
@@ -48,14 +50,12 @@ if ($new_status === 'cancelled' && $old_status !== 'cancelled') {
 if ($old_status === 'cancelled' && $new_status !== 'cancelled') {
     $items = $conn->query("SELECT book_id, quantity FROM order_items WHERE order_id = $order_id");
     while ($item = $items->fetch_assoc()) {
-        // Cek stok cukup dulu
         $s = $conn->prepare("SELECT stock FROM books WHERE id = ?");
         $s->bind_param('i', $item['book_id']);
         $s->execute();
         $current_stock = (int)$s->get_result()->fetch_assoc()['stock'];
         $s->close();
-
-        $deduct = min($item['quantity'], $current_stock); // jangan sampai minus
+        $deduct = min($item['quantity'], $current_stock);
         $stmt   = $conn->prepare("UPDATE books SET stock = stock - ? WHERE id = ?");
         $stmt->bind_param('ii', $deduct, $item['book_id']);
         $stmt->execute();
@@ -63,9 +63,14 @@ if ($old_status === 'cancelled' && $new_status !== 'cancelled') {
     }
 }
 
-// Update status pesanan
-$stmt = $conn->prepare("UPDATE orders SET status = ?, updated_at = NOW() WHERE id = ?");
-$stmt->bind_param('si', $new_status, $order_id);
+// Update status + tracking (hanya simpan resi kalau status shipped)
+if ($new_status === 'shipped' && $expedition && $tracking) {
+    $stmt = $conn->prepare("UPDATE orders SET status=?, expedition=?, tracking_number=?, updated_at=NOW() WHERE id=?");
+    $stmt->bind_param('sssi', $new_status, $expedition, $tracking, $order_id);
+} else {
+    $stmt = $conn->prepare("UPDATE orders SET status=?, updated_at=NOW() WHERE id=?");
+    $stmt->bind_param('si', $new_status, $order_id);
+}
 $stmt->execute();
 $stmt->close();
 

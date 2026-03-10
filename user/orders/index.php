@@ -108,16 +108,39 @@ require_once __DIR__ . '/../../includes/header.php';
                     <i class="bi bi-x-circle"></i> Batalkan
                 </button>
                 <?php endif; ?>
+
+                <?php if (in_array($order['status'], ['shipped','delivered']) && !empty($order['tracking_number'])): ?>
+                <?php
+                    $exp_urls = [
+                        'jne'      => 'https://www.jne.co.id/id/tracking/trace/',
+                        'jnt'      => 'https://www.jet.co.id/track/',
+                        'sicepat'  => 'https://www.sicepat.com/checkAwb/',
+                        'pos'      => 'https://www.posindonesia.co.id/id/tracking/',
+                        'tiki'     => 'https://tiki.id/id/tracking?awb=',
+                        'anteraja' => 'https://anteraja.id/tracking/',
+                        'ninja'    => 'https://www.ninjaxpress.co/id-id/tracking?id=',
+                    ];
+                    $exp_names = [
+                        'jne'=>'JNE','jnt'=>'J&T','sicepat'=>'SiCepat',
+                        'pos'=>'Pos','tiki'=>'TIKI','anteraja'=>'AnterAja','ninja'=>'Ninja'
+                    ];
+                    $track_url  = ($exp_urls[$order['expedition']] ?? '#') . $order['tracking_number'];
+                    $track_name = $exp_names[$order['expedition']] ?? strtoupper($order['expedition'] ?? '');
+                ?>
+                <a href="<?= $track_url ?>" target="_blank"
+                   style="padding:6px 14px;background:rgba(139,92,246,.1);color:#a78bfa;border:1px solid rgba(139,92,246,.2);border-radius:7px;text-decoration:none;font-size:.78rem;font-weight:500;display:inline-flex;align-items:center;gap:5px">
+                    <i class="bi bi-truck"></i> Lacak (<?= $track_name ?>)
+                </a>
+                <?php endif; ?>
             </div>
         </div>
 
-        <!-- Progress bar status -->
         <?php if ($order['status'] !== 'cancelled'): ?>
         <?php
             $steps = ['pending','processing','shipped','delivered'];
             $cur   = array_search($order['status'], $steps);
         ?>
-        <div style="padding:0 20px 14px">
+        <div style="padding:0 20px <?= in_array($order['status'], ['shipped','delivered']) && !empty($order['tracking_number']) ? '8px' : '14px' ?>">
             <div style="display:flex;align-items:center;gap:0">
                 <?php foreach ($steps as $i => $step): ?>
                 <div style="flex:1;display:flex;flex-direction:column;align-items:center">
@@ -138,6 +161,29 @@ require_once __DIR__ . '/../../includes/header.php';
                 <?php endforeach; ?>
             </div>
         </div>
+
+        <!-- Info resi saat shipped/delivered -->
+        <?php if (in_array($order['status'], ['shipped','delivered']) && !empty($order['tracking_number'])): ?>
+        <?php
+            $exp_urls2  = ['jne'=>'https://www.jne.co.id/id/tracking/trace/','jnt'=>'https://www.jet.co.id/track/','sicepat'=>'https://www.sicepat.com/checkAwb/','pos'=>'https://www.posindonesia.co.id/id/tracking/','tiki'=>'https://tiki.id/id/tracking?awb=','anteraja'=>'https://anteraja.id/tracking/','ninja'=>'https://www.ninjaxpress.co/id-id/tracking?id='];
+            $exp_names2 = ['jne'=>'JNE','jnt'=>'J&T Express','sicepat'=>'SiCepat','pos'=>'Pos Indonesia','tiki'=>'TIKI','anteraja'=>'AnterAja','ninja'=>'Ninja Express'];
+            $t_url  = ($exp_urls2[$order['expedition']] ?? '#') . $order['tracking_number'];
+            $t_name = $exp_names2[$order['expedition']] ?? strtoupper($order['expedition'] ?? '');
+        ?>
+        <div style="margin:0 20px 14px;background:rgba(59,130,246,.06);border:1px solid rgba(59,130,246,.15);border-radius:8px;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+            <div style="display:flex;align-items:center;gap:10px">
+                <i class="bi bi-truck" style="color:var(--accent)"></i>
+                <div>
+                    <div style="font-size:.72rem;color:var(--text-muted)">Dikirim via <?= $t_name ?></div>
+                    <div style="font-size:.82rem;font-weight:600;color:var(--text-primary);font-family:monospace"><?= htmlspecialchars($order['tracking_number']) ?></div>
+                </div>
+            </div>
+            <a href="<?= $t_url ?>" target="_blank"
+               style="padding:6px 14px;background:var(--accent);color:#fff;border-radius:7px;text-decoration:none;font-size:.75rem;font-weight:500;white-space:nowrap">
+                <i class="bi bi-box-arrow-up-right"></i> Lacak Paket
+            </a>
+        </div>
+        <?php endif; ?>
         <?php else: ?>
         <!-- Label cancelled -->
         <div style="padding:0 20px 14px">
