@@ -82,6 +82,22 @@ if (!$_adminAvatarUrl && !isset($_SESSION['user_avatar'])) {
                 <i class="bi bi-people"></i> User
             </a>
         </div>
+        <div class="nav-item">
+            <a href="<?= BASE_URL ?>admin/chat/index.php"
+               class="<?= adminNavActive('', 'chat') ?>"
+               id="sidebarChatLink">
+                <i class="bi bi-chat-dots"></i> Chat
+                <span class="nav-badge" id="chatBadge" style="display:none"></span>
+            </a>
+        </div>
+
+        <div class="nav-label">Analitik</div>
+        <div class="nav-item">
+            <a href="<?= BASE_URL ?>admin/reports/index.php"
+               class="<?= adminNavActive('', 'reports') ?>">
+                <i class="bi bi-bar-chart-line"></i> Laporan
+            </a>
+        </div>
 
         <div class="nav-label">Akun</div>
         <div class="nav-item">

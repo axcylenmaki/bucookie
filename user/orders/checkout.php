@@ -72,6 +72,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt->execute();
             $stmt->close();
 
+            // Notifikasi untuk admin
+            $notif_msg = "Pesanan baru #" . $order_id . " dari " . $_SESSION['user_name'];
+            $stmt_n = $conn->prepare("INSERT INTO notifications (type, reference_id, message) VALUES ('order', ?, ?)");
+            $stmt_n->bind_param('is', $order_id, $notif_msg);
+            $stmt_n->execute();
+            $stmt_n->close();
+
             header('Location: ' . BASE_URL . 'user/orders/index.php?msg=success&order_id=' . $order_id);
             exit;
         }

@@ -64,6 +64,11 @@ if (!$_avatarUrl && isLoggedIn()) {
                 <i class="bi bi-headset"></i> Bantuan
             </a>
         </div>
+        <div class="nav-item">
+            <a href="<?= BASE_URL ?>user/chat/index.php" class="<?= navActive('index.php') && strpos($_SERVER['PHP_SELF'],'chat')!==false ? 'active' : '' ?>">
+                <i class="bi bi-chat-dots"></i> Chat Admin
+            </a>
+        </div>
 
         <?php if (isLoggedIn()): ?>
         <div class="nav-label">Akun</div>

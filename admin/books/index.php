@@ -27,8 +27,13 @@ $books = $conn->query("
 ?>
 
 <div class="page-header">
-    <h1>Buku</h1>
-    <p>Kelola data buku yang tersedia di toko</p>
+    <div>
+        <h1>Buku</h1>
+        <p>Kelola data buku yang tersedia di toko</p>
+    </div>
+    <a href="<?= BASE_URL ?>admin/books/add.php" class="btn-save" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px">
+        <i class="bi bi-plus-lg"></i> Tambah Buku
+    </a>
 </div>
 
 <?php if ($msg === 'added'): ?>

@@ -20,8 +20,13 @@ $categories = $conn->query("
 ?>
 
 <div class="page-header">
-    <h1>Kategori Buku</h1>
-    <p>Kelola kategori untuk pengelompokan buku</p>
+    <div>
+        <h1>Kategori Buku</h1>
+        <p>Kelola kategori untuk pengelompokan buku</p>
+    </div>
+    <a href="<?= BASE_URL ?>admin/categories/add.php" class="btn-save" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px">
+        <i class="bi bi-plus-lg"></i> Tambah Kategori
+    </a>
 </div>
 
 <?php if ($msg === 'added'): ?>

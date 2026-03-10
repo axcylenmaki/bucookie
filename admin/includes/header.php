@@ -658,10 +658,29 @@ $pending_orders = (int)$conn->query("SELECT COUNT(*) AS c FROM orders WHERE stat
             </div>
         </div>
         <div style="display:flex;align-items:center;gap:10px">
+            <!-- Bell Notifikasi -->
+            <div style="position:relative">
+                <button id="notifBtn" onclick="toggleNotif()"
+                        style="width:36px;height:36px;border-radius:8px;background:var(--bg-card);border:1px solid var(--border);color:var(--text-secondary);font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;position:relative">
+                    <i class="bi bi-bell"></i>
+                    <span id="notifDot" style="display:none;position:absolute;top:5px;right:5px;width:8px;height:8px;background:#ef4444;border-radius:50%;border:2px solid var(--bg-base)"></span>
+                </button>
+                <!-- Dropdown notifikasi -->
+                <div id="notifDropdown" style="display:none;position:absolute;right:0;top:calc(100% + 8px);width:320px;background:var(--bg-card);border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.4);z-index:200;overflow:hidden">
+                    <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+                        <span style="font-size:.82rem;font-weight:600;color:var(--text-primary)">Notifikasi</span>
+                        <button onclick="markAllRead()" style="font-size:.7rem;color:var(--accent);background:none;border:none;cursor:pointer">Tandai semua dibaca</button>
+                    </div>
+                    <div id="notifList" style="max-height:320px;overflow-y:auto">
+                        <div style="padding:20px;text-align:center;color:var(--text-muted);font-size:.8rem">Memuat...</div>
+                    </div>
+                </div>
+            </div>
+
             <?php if ($pending_orders > 0): ?>
             <a href="<?= BASE_URL ?>admin/orders/index.php?status=pending"
                style="display:flex;align-items:center;gap:6px;padding:6px 12px;background:var(--warning-soft);color:var(--warning);border-radius:7px;text-decoration:none;font-size:.75rem;font-weight:500">
-                <i class="bi bi-bell"></i> <?= $pending_orders ?> pesanan baru
+                <i class="bi bi-bag"></i> <?= $pending_orders ?> pesanan baru
             </a>
             <?php endif; ?>
             <a href="<?= BASE_URL ?>index.php"
@@ -670,5 +689,88 @@ $pending_orders = (int)$conn->query("SELECT COUNT(*) AS c FROM orders WHERE stat
             </a>
         </div>
     </header>
+
+    <!-- Script Notifikasi -->
+    <script>
+    const NOTIF_AJAX = '<?= BASE_URL ?>admin/notifications/ajax.php';
+    const CHAT_AJAX  = '<?= BASE_URL ?>admin/chat/ajax.php';
+
+    function toggleNotif() {
+        const dd = document.getElementById('notifDropdown');
+        dd.style.display = dd.style.display === 'none' ? 'block' : 'none';
+        if (dd.style.display === 'block') loadNotif();
+    }
+
+    document.addEventListener('click', e => {
+        if (!document.getElementById('notifBtn').contains(e.target) &&
+            !document.getElementById('notifDropdown').contains(e.target)) {
+            document.getElementById('notifDropdown').style.display = 'none';
+        }
+    });
+
+    function loadNotif() {
+        fetch(NOTIF_AJAX + '?action=fetch')
+            .then(r=>r.json())
+            .then(data => {
+                const dot = document.getElementById('notifDot');
+                dot.style.display = data.total > 0 ? 'block' : 'none';
+
+                const list = document.getElementById('notifList');
+                if (!data.list.length) {
+                    list.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-muted);font-size:.8rem">Tidak ada notifikasi baru</div>';
+                    return;
+                }
+                list.innerHTML = data.list.map(n => {
+                    const icon = n.type === 'order' ? 'bi-bag-check' : 'bi-chat-dots';
+                    const color = n.type === 'order' ? '#f59e0b' : '#60a5fa';
+                    const link = n.type === 'order'
+                        ? '<?= BASE_URL ?>admin/orders/index.php?status=pending'
+                        : '<?= BASE_URL ?>admin/chat/index.php';
+                    return `<a href="${link}" onclick="markOne(${n.id})"
+                        style="display:flex;gap:12px;align-items:flex-start;padding:12px 16px;border-bottom:1px solid var(--border);text-decoration:none;background:rgba(59,130,246,.04)">
+                        <div style="width:32px;height:32px;border-radius:8px;background:${color}22;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:${color}">
+                            <i class="bi ${icon}" style="font-size:.85rem"></i>
+                        </div>
+                        <div style="flex:1;min-width:0">
+                            <div style="font-size:.78rem;color:var(--text-primary);line-height:1.4">${n.message}</div>
+                            <div style="font-size:.68rem;color:var(--text-muted);margin-top:3px">${n.created_at}</div>
+                        </div>
+                    </a>`;
+                }).join('');
+            });
+    }
+
+    function markAllRead() {
+        const fd = new FormData(); fd.append('action','mark_read');
+        fetch(NOTIF_AJAX, {method:'POST',body:fd}).then(()=>{
+            document.getElementById('notifDot').style.display = 'none';
+            document.getElementById('notifList').innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-muted);font-size:.8rem">Semua sudah dibaca</div>';
+        });
+    }
+
+    function markOne(id) {
+        const fd = new FormData(); fd.append('action','mark_one'); fd.append('id',id);
+        fetch(NOTIF_AJAX, {method:'POST',body:fd});
+    }
+
+    // Poll notifikasi + chat badge
+    function pollBadges() {
+        fetch(NOTIF_AJAX + '?action=fetch')
+            .then(r=>r.json())
+            .then(data => {
+                document.getElementById('notifDot').style.display = data.total > 0 ? 'block' : 'none';
+            });
+        fetch(CHAT_AJAX + '?action=user_list')
+            .then(r=>r.json())
+            .then(list => {
+                const total = list.reduce((s,u)=>s+parseInt(u.unread||0),0);
+                const badge = document.getElementById('chatBadge');
+                if (badge) { badge.textContent = total; badge.style.display = total > 0 ? 'inline' : 'none'; }
+            });
+    }
+
+    pollBadges();
+    setInterval(pollBadges, 5000);
+    </script>
 
     <main class="page-content">
