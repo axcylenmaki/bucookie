@@ -8,20 +8,22 @@ $error      = '';
 $categories = $conn->query("SELECT id, name FROM categories ORDER BY name ASC");
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $title       = trim($_POST['title']        ?? '');
-    $author      = trim($_POST['author']       ?? '');
-    $publisher   = trim($_POST['publisher']    ?? '');
-    $year        = trim($_POST['year']         ?? '');
-    $price       = trim($_POST['price']        ?? '');
-    $stock       = (int)($_POST['stock']       ?? 0);
+    $title       = trim($_POST['title']       ?? '');
+    $author      = trim($_POST['author']      ?? '');
+    $publisher   = trim($_POST['publisher']   ?? '');
+    $year        = trim($_POST['year']        ?? '');
+    $cost_price  = trim($_POST['cost_price']  ?? 0); // Ambil harga modal
+    $price       = trim($_POST['price']       ?? 0); // Ini harga jual
+    $stock       = (int)($_POST['stock']      ?? 0);
     $category_id = (int)($_POST['category_id'] ?? 0);
     $description = trim($_POST['description']  ?? '');
     $cover       = null;
 
-    if (empty($title) || empty($author) || empty($price) || $category_id === 0) {
-        $error = 'Judul, penulis, harga, dan kategori wajib diisi.';
+    // Validasi tambahan untuk harga modal
+    if (empty($title) || empty($author) || empty($price) || empty($cost_price) || $category_id === 0) {
+        $error = 'Judul, penulis, harga modal, harga jual, dan kategori wajib diisi.';
     } else {
-        // Upload cover
+        // --- Bagian Upload Cover (Tetap Sama) ---
         if (!empty($_FILES['cover']['name'])) {
             $allowed = ['jpg', 'jpeg', 'png', 'webp'];
             $ext     = strtolower(pathinfo($_FILES['cover']['name'], PATHINFO_EXTENSION));
@@ -38,11 +40,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         if (!$error) {
+            // Update Query: Tambahkan cost_price
             $stmt = $conn->prepare("
-                INSERT INTO books (category_id, title, author, publisher, year, price, stock, description, cover)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO books (category_id, title, author, publisher, year, cost_price, price, stock, description, cover)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ");
-            $stmt->bind_param('issssidss', $category_id, $title, $author, $publisher, $year, $price, $stock, $description, $cover);
+            // Binding param: 'issssddiss' (d untuk double/decimal)
+            $stmt->bind_param('issssddiss', $category_id, $title, $author, $publisher, $year, $cost_price, $price, $stock, $description, $cover);
+            
             if ($stmt->execute()) {
                 header('Location: ' . BASE_URL . 'admin/books/index.php?msg=added');
                 exit;
@@ -72,20 +77,35 @@ require_once __DIR__ . '/../../admin/includes/header.php';
 
         <div class="mb-field">
             <label class="form-label">Judul Buku <span class="req">*</span></label>
-            <input type="text" name="title" class="form-control"
-                   value="<?= htmlspecialchars($_POST['title'] ?? '') ?>" required autofocus>
+            <input type="text" name="title" class="form-control" value="<?= htmlspecialchars($_POST['title'] ?? '') ?>" required autofocus>
         </div>
 
         <div class="form-grid-2">
             <div class="mb-field">
                 <label class="form-label">Penulis <span class="req">*</span></label>
-                <input type="text" name="author" class="form-control"
-                       value="<?= htmlspecialchars($_POST['author'] ?? '') ?>" required>
+                <input type="text" name="author" class="form-control" value="<?= htmlspecialchars($_POST['author'] ?? '') ?>" required>
             </div>
             <div class="mb-field">
                 <label class="form-label">Penerbit</label>
-                <input type="text" name="publisher" class="form-control"
-                       value="<?= htmlspecialchars($_POST['publisher'] ?? '') ?>">
+                <input type="text" name="publisher" class="form-control" value="<?= htmlspecialchars($_POST['publisher'] ?? '') ?>">
+            </div>
+        </div>
+
+        <div class="form-grid-3">
+            <div class="mb-field">
+                <label class="form-label">Harga Modal (Rp) <span class="req">*</span></label>
+                <input type="number" id="cost_price" name="cost_price" class="form-control" 
+                       value="<?= htmlspecialchars($_POST['cost_price'] ?? '') ?>" required oninput="calculateProfit()">
+            </div>
+            <div class="mb-field">
+                <label class="form-label">Harga Jual (Rp) <span class="req">*</span></label>
+                <input type="number" id="price" name="price" class="form-control" 
+                       value="<?= htmlspecialchars($_POST['price'] ?? '') ?>" required oninput="calculateProfit()">
+            </div>
+            <div class="mb-field">
+                <label class="form-label">Keuntungan/pcs</label>
+                <input type="text" id="profit_display" class="form-control" 
+                       style="background: #e9ecef; font-weight: bold; color: #28a745;" readonly placeholder="Rp 0">
             </div>
         </div>
 
@@ -94,9 +114,10 @@ require_once __DIR__ . '/../../admin/includes/header.php';
                 <label class="form-label">Kategori <span class="req">*</span></label>
                 <select name="category_id" class="form-select" required>
                     <option value="">-- Pilih --</option>
-                    <?php while ($cat = $categories->fetch_assoc()): ?>
-                    <option value="<?= $cat['id'] ?>"
-                        <?= ($_POST['category_id'] ?? '') == $cat['id'] ? 'selected' : '' ?>>
+                    <?php 
+                    $categories->data_seek(0);
+                    while ($cat = $categories->fetch_assoc()): ?>
+                    <option value="<?= $cat['id'] ?>" <?= ($_POST['category_id'] ?? '') == $cat['id'] ? 'selected' : '' ?>>
                         <?= htmlspecialchars($cat['name']) ?>
                     </option>
                     <?php endwhile; ?>
@@ -104,21 +125,12 @@ require_once __DIR__ . '/../../admin/includes/header.php';
             </div>
             <div class="mb-field">
                 <label class="form-label">Tahun Terbit</label>
-                <input type="number" name="year" class="form-control"
-                       min="1900" max="<?= date('Y') ?>"
-                       value="<?= htmlspecialchars($_POST['year'] ?? date('Y')) ?>">
+                <input type="number" name="year" class="form-control" min="1900" max="<?= date('Y') ?>" value="<?= htmlspecialchars($_POST['year'] ?? date('Y')) ?>">
             </div>
             <div class="mb-field">
                 <label class="form-label">Stok <span class="req">*</span></label>
-                <input type="number" name="stock" class="form-control" min="0"
-                       value="<?= htmlspecialchars($_POST['stock'] ?? '0') ?>" required>
+                <input type="number" name="stock" class="form-control" min="0" value="<?= htmlspecialchars($_POST['stock'] ?? '0') ?>" required>
             </div>
-        </div>
-
-        <div class="mb-field">
-            <label class="form-label">Harga (Rp) <span class="req">*</span></label>
-            <input type="number" name="price" class="form-control" min="0" step="500"
-                   value="<?= htmlspecialchars($_POST['price'] ?? '') ?>" required>
         </div>
 
         <div class="mb-field">
@@ -129,15 +141,39 @@ require_once __DIR__ . '/../../admin/includes/header.php';
         <div class="mb-field">
             <label class="form-label">Cover Buku</label>
             <input type="file" name="cover" class="form-control" accept=".jpg,.jpeg,.png,.webp">
-            <div style="font-size:.7rem;color:var(--text-muted);margin-top:4px">Format: JPG, PNG, WEBP. Maks 2MB.</div>
         </div>
 
         <div>
             <button type="submit" class="btn-save"><i class="bi bi-check-lg"></i> Simpan</button>
             <a href="<?= BASE_URL ?>admin/books/index.php" class="btn-cancel">Batal</a>
         </div>
-
     </form>
 </div>
+
+<script>
+function calculateProfit() {
+    const cost = parseFloat(document.getElementById('cost_price').value) || 0;
+    const price = parseFloat(document.getElementById('price').value) || 0;
+    const profit = price - cost;
+    
+    const display = document.getElementById('profit_display');
+    
+    // Format ke rupiah
+    display.value = new Intl.NumberFormat('id-ID', {
+        style: 'currency',
+        currency: 'IDR',
+        minimumFractionDigits: 0
+    }).format(profit);
+
+    // Ubah warna jika rugi
+    if(profit < 0) {
+        display.style.color = '#dc3545';
+    } else {
+        display.style.color = '#28a745';
+    }
+}
+// Jalankan fungsi sekali saat load jika ada nilai lama (old input)
+window.onload = calculateProfit;
+</script>
 
 <?php require_once __DIR__ . '/../../admin/includes/footer.php'; ?>

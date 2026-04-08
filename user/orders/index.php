@@ -132,6 +132,13 @@ require_once __DIR__ . '/../../includes/header.php';
                     <i class="bi bi-truck"></i> Lacak (<?= $track_name ?>)
                 </a>
                 <?php endif; ?>
+
+                <?php if (in_array($order['status'], ['processing','shipped','delivered'])): ?>
+                <a href="<?= BASE_URL ?>user/invoice/index.php?order_id=<?= $order['id'] ?>"
+                   style="padding:6px 14px;background:rgba(16,185,129,.08);color:#34d399;border:1px solid rgba(16,185,129,.2);border-radius:7px;text-decoration:none;font-size:.78rem;font-weight:500;display:inline-flex;align-items:center;gap:5px">
+                    <i class="bi bi-receipt"></i> Invoice
+                </a>
+                <?php endif; ?>
             </div>
         </div>
 

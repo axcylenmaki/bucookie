@@ -79,6 +79,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt_n->execute();
             $stmt_n->close();
 
+            // ── Kirim Invoice via Email ───────────────────────────
+            // Ambil data order lengkap untuk invoice
+            $stmt_inv = $conn->prepare("
+                SELECT o.*, u.name as user_name, u.email as user_email,
+                       u.phone as user_phone, u.address as user_address
+                FROM orders o JOIN users u ON o.user_id = u.id
+                WHERE o.id = ?
+            ");
+            $stmt_inv->bind_param('i', $order_id);
+            $stmt_inv->execute();
+            $order_data = $stmt_inv->get_result()->fetch_assoc();
+            $stmt_inv->close();
+
+            // Ambil item untuk invoice
+            $stmt_it = $conn->prepare("
+                SELECT oi.*, b.title, b.author
+                FROM order_items oi JOIN books b ON oi.book_id = b.id
+                WHERE oi.order_id = ?
+            ");
+            $stmt_it->bind_param('i', $order_id);
+            $stmt_it->execute();
+            $order_items_inv = $stmt_it->get_result()->fetch_all(MYSQLI_ASSOC);
+            $stmt_it->close();
+
+            // Build invoice HTML & kirim email (non-blocking: ignore error)
+            try {
+                require_once __DIR__ . '/../../includes/mailer.php';
+                require_once __DIR__ . '/../invoice/download.php'; // load fungsi buildInvoiceHtml
+                $inv_no   = '#' . str_pad($order_id, 5, '0', STR_PAD_LEFT);
+                $inv_html = buildInvoiceHtml($order_data, $order_items_inv, $inv_no, 'Diproses');
+                sendInvoiceEmail($order_data, $order_items_inv, $inv_html, $inv_no);
+            } catch (\Throwable $e) {
+                // Email gagal tidak boleh menghentikan proses order
+                error_log('[Bucookie] Invoice email error: ' . $e->getMessage());
+            }
+            // ─────────────────────────────────────────────────────
+
             header('Location: ' . BASE_URL . 'user/orders/index.php?msg=success&order_id=' . $order_id);
             exit;
         }
