@@ -35,7 +35,6 @@ require_once __DIR__ . '/../includes/header.php';
     </p>
 </div>
 
-<!-- Search -->
 <form method="GET" style="display:flex;gap:8px;margin-bottom:20px">
     <?php if ($cat_id): ?><input type="hidden" name="category" value="<?= $cat_id ?>"><?php endif; ?>
     <div style="position:relative;flex:1;max-width:400px">
@@ -51,19 +50,17 @@ require_once __DIR__ . '/../includes/header.php';
     <?php endif; ?>
 </form>
 
-<!-- Category Pills -->
 <div class="cat-pills">
     <a href="<?= BASE_URL ?>pages/books.php<?= $search ? '?search='.urlencode($search) : '' ?>"
        class="cat-pill <?= !$cat_id ? 'active' : '' ?>">Semua</a>
     <?php while ($cat = $categories->fetch_assoc()): ?>
     <a href="<?= BASE_URL ?>pages/books.php?category=<?= $cat['id'] ?><?= $search ? '&search='.urlencode($search) : '' ?>"
        class="cat-pill <?= $cat_id === $cat['id'] ? 'active' : '' ?>">
-        <?= htmlspecialchars($cat['name']) ?>
+         <?= htmlspecialchars($cat['name']) ?>
     </a>
     <?php endwhile; ?>
 </div>
 
-<!-- Books Grid -->
 <div class="books-grid" style="margin-top:20px">
     <?php if ($books->num_rows === 0): ?>
     <div class="empty-state" style="grid-column:1/-1">
@@ -78,9 +75,11 @@ require_once __DIR__ . '/../includes/header.php';
             <?php else: ?>
                 <div class="book-cover-placeholder"><i class="bi bi-book-half"></i><span>No Cover</span></div>
             <?php endif; ?>
+            
             <?php if ((new DateTime())->diff(new DateTime($book['created_at']))->days <= 30): ?>
                 <span class="book-badge">Baru</span>
             <?php endif; ?>
+            
             <?php if ($book['stock'] == 0): ?>
                 <span class="book-badge" style="background:var(--danger);top:auto;bottom:10px">Habis</span>
             <?php endif; ?>
@@ -91,13 +90,30 @@ require_once __DIR__ . '/../includes/header.php';
             <div class="book-author"><?= htmlspecialchars($book['author']) ?></div>
             <div class="book-footer">
                 <div class="book-price">Rp <?= number_format($book['price'], 0, ',', '.') ?></div>
+                
                 <?php if ($book['stock'] > 0): ?>
-                <a href="<?= BASE_URL ?>pages/cart.php?add=<?= $book['id'] ?>" class="btn-cart" onclick="event.stopPropagation()" title="Tambah ke keranjang">
-                    <i class="bi bi-cart-plus"></i>
-                </a>
+                    <?php 
+                        // Cek apakah user sudah login atau belum
+                        if (isLoggedIn()) {
+                            $cart_link = BASE_URL . "pages/cart.php?add=" . $book['id'];
+                            $btn_title = "Tambah ke keranjang";
+                        } else {
+                            $cart_link = BASE_URL . "auth/login.php";
+                            $btn_title = "Login untuk belanja";
+                        }
+                    ?>
+                    <a href="<?= $cart_link ?>" 
+                       class="btn-cart" 
+                       onclick="event.stopPropagation()" 
+                       title="<?= $btn_title ?>">
+                        <i class="bi bi-cart-plus"></i>
+                    </a>
                 <?php else: ?>
-                <span class="btn-cart" style="opacity:.4;cursor:not-allowed"><i class="bi bi-x-lg"></i></span>
+                    <span class="btn-cart" style="opacity:.4;cursor:not-allowed">
+                        <i class="bi bi-x-lg"></i>
+                    </span>
                 <?php endif; ?>
+
             </div>
         </div>
     </a>

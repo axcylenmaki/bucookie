@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Waktu pembuatan: 10 Mar 2026 pada 05.18
+-- Waktu pembuatan: 09 Apr 2026 pada 10.16
 -- Versi server: 10.4.32-MariaDB
 -- Versi PHP: 8.2.12
 
@@ -34,6 +34,7 @@ CREATE TABLE `books` (
   `author` varchar(100) NOT NULL,
   `publisher` varchar(100) DEFAULT NULL,
   `year` year(4) DEFAULT NULL,
+  `cost_price` decimal(10,2) DEFAULT NULL,
   `price` decimal(10,2) NOT NULL,
   `stock` int(11) NOT NULL DEFAULT 0,
   `description` text DEFAULT NULL,
@@ -45,9 +46,10 @@ CREATE TABLE `books` (
 -- Dumping data untuk tabel `books`
 --
 
-INSERT INTO `books` (`id`, `category_id`, `title`, `author`, `publisher`, `year`, `price`, `stock`, `description`, `cover`, `created_at`) VALUES
-(3, 3, 'Naruto', 'Masashi Kishimoto', 'Elex Media Komputindo', '2002', 90000.00, 0, 'Buku komik series Jepang', 'cover_69af78c7b3da4.jpg', '2026-03-10 01:49:59'),
-(4, 3, 'Bumi', 'Tere Liye', 'Sabar Grip', '2024', 80000.00, 73, 'Novel \"Bumi\" karya Tere Liye mengisahkan petualangan tiga remaja SMA—Raib yang bisa menghilang, Seli yang mampu mengeluarkan petir, dan Ali si jenius—menjelajahi dunia paralel. Mereka berusaha menghentikan Tamus, sosok jahat yang ingin menguasai dunia, sekaligus mengungkap misteri klan bulan, matahari, dan bumi.', 'cover_69af79a21c41f.jpg', '2026-03-10 01:53:38');
+INSERT INTO `books` (`id`, `category_id`, `title`, `author`, `publisher`, `year`, `cost_price`, `price`, `stock`, `description`, `cover`, `created_at`) VALUES
+(6, 3, 'Bumi', 'Tere Liye', 'SABAKGRIP', '2024', 85000.00, 103000.00, 100, 'mengisahkan petualangan Raib (15 tahun), remaja yang bisa menghilang, bersama dua temannya, Seli (penjinak api) dan Ali (genius), di dunia paralel. Mereka terseret konflik antarklan setelah bertemu Tamus, sosok jahat yang ingin menguasai Klan Bulan dan Bumi', 'cover_69d705c9e7c54.jpg', '2026-04-09 01:50:01'),
+(7, 3, 'Bulan', 'Tere Liye', 'SABAKGRIP', '2025', 80000.00, 95000.00, 97, 'Seri kedua dari serial Bumi yang menceritakan petualangan Raib, Seli, dan Ali di dunia paralel, khususnya Klan Matahari. Mereka berpetualang mencari bunga matahari pertama, mengikuti kompetisi, dan berjuang melawan Si Tanpa Mahkota demi persahabatan dan perdamaian.', 'cover_69d70623ab428.jpg', '2026-04-09 01:51:31'),
+(8, 9, 'Buku Ekonomi: Suatu Pengantar', 'Sri Suro Adhawati.', '', '2026', 100000.00, 116000.00, 98, 'Buku Pengantar Ekonomi ini merupakan buku pegangan bagi mahasiswa guna strategi pembelajaran yang aktraktif guna memberi bekal pengetahuan dasar dan daya tarik bagi mahasiswa yang belum mempunyai pemahaman dan wawasan yang mendalam tentang teori ekonomi. Supaya Lebih paham, baca Daftar isi Ekonomi terbaik ini Daftar isi Buku Ekonomi yang berjudul Buku Ekonomi: Suatu Pengantar, diantaranya Bab 1 Ruang Lingkup dan Masalah Ekonomi Bab 2 Sistem Perekonomian dan Mekanisme Pasar Bab 3 Teori Permintaan dan Teori Penawaran Bab 4 Bentuk-Bentuk Pasar Bab 5 Kebijakan Pemerintah Bab 6 Uang dan Lembaga Keuangan', 'cover_69d706fcf1780.jpg', '2026-04-09 01:55:08');
 
 -- --------------------------------------------------------
 
@@ -112,6 +114,58 @@ INSERT INTO `contact_info` (`id`, `whatsapp`, `email`, `updated_at`) VALUES
 -- --------------------------------------------------------
 
 --
+-- Struktur dari tabel `messages`
+--
+
+CREATE TABLE `messages` (
+  `id` int(11) NOT NULL,
+  `user_id` int(11) DEFAULT NULL,
+  `sender` enum('user','admin') DEFAULT NULL,
+  `message` text DEFAULT NULL,
+  `is_read` tinyint(4) DEFAULT 0,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data untuk tabel `messages`
+--
+
+INSERT INTO `messages` (`id`, `user_id`, `sender`, `message`, `is_read`, `created_at`) VALUES
+(1, 2, 'user', 'tes', 1, '2026-04-08 13:41:08'),
+(2, 2, 'admin', 'halo, ada yang bisa di bantu?', 1, '2026-04-08 13:41:24'),
+(3, 2, 'user', 'dimana pesanan saya?', 1, '2026-04-09 02:27:24'),
+(4, 2, 'admin', 'silahkan di lacak melalui link yang tertera', 1, '2026-04-09 02:31:10');
+
+-- --------------------------------------------------------
+
+--
+-- Struktur dari tabel `notifications`
+--
+
+CREATE TABLE `notifications` (
+  `id` int(11) NOT NULL,
+  `type` varchar(50) DEFAULT NULL,
+  `reference_id` int(11) DEFAULT NULL,
+  `message` text DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data untuk tabel `notifications`
+--
+
+INSERT INTO `notifications` (`id`, `type`, `reference_id`, `message`, `created_at`) VALUES
+(1, 'message', 2, 'Pesan baru dari Yuki: tes', '2026-04-08 13:41:08'),
+(2, 'order', 8, 'Pesanan baru #8 dari Yuki', '2026-04-08 14:28:32'),
+(3, 'order', 9, 'Pesanan baru #9 dari Yuki', '2026-04-08 14:58:13'),
+(4, 'order', 10, 'Pesanan baru #10 dari Yuki', '2026-04-09 02:24:07'),
+(5, 'message', 2, 'Pesan baru dari Yuki: dimana pesanan saya?', '2026-04-09 02:27:24'),
+(6, 'order', 11, 'Pesanan baru #11 dari Yuki', '2026-04-09 07:56:10'),
+(7, 'order', 12, 'Pesanan baru #12 dari Yuki', '2026-04-09 08:01:49');
+
+-- --------------------------------------------------------
+
+--
 -- Struktur dari tabel `orders`
 --
 
@@ -121,6 +175,8 @@ CREATE TABLE `orders` (
   `total_price` decimal(10,2) NOT NULL,
   `shipping_address` text NOT NULL,
   `status` enum('pending','processing','shipped','delivered','cancelled') NOT NULL DEFAULT 'pending',
+  `expedition` varchar(50) DEFAULT NULL,
+  `tracking_number` varchar(100) DEFAULT NULL,
   `payment_method` enum('payment_at_delivery') DEFAULT 'payment_at_delivery',
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
@@ -130,14 +186,19 @@ CREATE TABLE `orders` (
 -- Dumping data untuk tabel `orders`
 --
 
-INSERT INTO `orders` (`id`, `user_id`, `total_price`, `shipping_address`, `status`, `payment_method`, `created_at`, `updated_at`) VALUES
-(1, 2, 160000.00, 'Jalan Duren besar nomor 45 blok A', 'delivered', 'payment_at_delivery', '2026-03-10 01:58:54', '2026-03-10 02:13:43'),
-(2, 2, 80000.00, 'Jalan Duren besar nomor 45 blok A', 'delivered', 'payment_at_delivery', '2026-03-10 02:09:55', '2026-03-10 02:39:02'),
-(3, 5, 170000.00, 'Jalan Damai 2 Kota bekasi', 'delivered', 'payment_at_delivery', '2026-03-10 02:15:36', '2026-03-10 02:38:50'),
-(4, 5, 80000.00, 'Jalan Damai 2 Kota bekasi', 'delivered', 'payment_at_delivery', '2026-03-10 02:46:12', '2026-03-10 02:52:24'),
-(5, 5, 80000.00, 'Jalan Damai 2 Kota bekasi', 'cancelled', 'payment_at_delivery', '2026-03-10 02:47:31', '2026-03-10 02:47:41'),
-(6, 5, 80000.00, 'Jalan Damai 2 Kota bekasi', 'processing', 'payment_at_delivery', '2026-03-10 02:53:02', '2026-03-10 03:43:51'),
-(7, 2, 160000.00, 'Jalan Duren besar nomor 45 blok A', 'cancelled', 'payment_at_delivery', '2026-03-10 04:04:49', '2026-03-10 04:04:53');
+INSERT INTO `orders` (`id`, `user_id`, `total_price`, `shipping_address`, `status`, `expedition`, `tracking_number`, `payment_method`, `created_at`, `updated_at`) VALUES
+(1, 2, 160000.00, 'Jalan Duren besar nomor 45 blok A', 'delivered', NULL, NULL, 'payment_at_delivery', '2026-03-10 01:58:54', '2026-03-10 02:13:43'),
+(2, 2, 80000.00, 'Jalan Duren besar nomor 45 blok A', 'delivered', NULL, NULL, 'payment_at_delivery', '2026-03-10 02:09:55', '2026-03-10 02:39:02'),
+(3, 5, 170000.00, 'Jalan Damai 2 Kota bekasi', 'delivered', NULL, NULL, 'payment_at_delivery', '2026-03-10 02:15:36', '2026-03-10 02:38:50'),
+(4, 5, 80000.00, 'Jalan Damai 2 Kota bekasi', 'delivered', NULL, NULL, 'payment_at_delivery', '2026-03-10 02:46:12', '2026-03-10 02:52:24'),
+(5, 5, 80000.00, 'Jalan Damai 2 Kota bekasi', 'cancelled', NULL, NULL, 'payment_at_delivery', '2026-03-10 02:47:31', '2026-03-10 02:47:41'),
+(6, 5, 80000.00, 'Jalan Damai 2 Kota bekasi', 'delivered', 'sicepat', 'SCPT1234', 'payment_at_delivery', '2026-03-10 02:53:02', '2026-04-09 02:22:49'),
+(7, 2, 160000.00, 'Jalan Duren besar nomor 45 blok A', 'cancelled', NULL, NULL, 'payment_at_delivery', '2026-03-10 04:04:49', '2026-03-10 04:04:53'),
+(8, 2, 80000.00, 'Jalan Duren besar nomor 45 blok A', 'cancelled', 'sicepat', 'SCPT2345', 'payment_at_delivery', '2026-04-08 14:28:32', '2026-04-09 02:00:55'),
+(9, 2, 20000.00, 'Jalan Duren besar nomor 45 blok A', 'cancelled', 'sicepat', 'SCPT1234', 'payment_at_delivery', '2026-04-08 14:58:13', '2026-04-09 02:00:50'),
+(10, 2, 306000.00, 'Jalan Duren besar nomor 45 blok A', 'delivered', 'jnt', 'jt45', 'payment_at_delivery', '2026-04-09 02:24:06', '2026-04-09 02:26:22'),
+(11, 2, 116000.00, 'Jalan Duren besar nomor 45 blok A', 'delivered', 'jnt', '123', 'payment_at_delivery', '2026-04-09 07:56:10', '2026-04-09 08:02:04'),
+(12, 2, 95000.00, 'Jalan Duren besar nomor 45 blok A', 'shipped', 'sicepat', 'SCPT1234', 'payment_at_delivery', '2026-04-09 08:01:49', '2026-04-09 08:05:55');
 
 -- --------------------------------------------------------
 
@@ -158,14 +219,10 @@ CREATE TABLE `order_items` (
 --
 
 INSERT INTO `order_items` (`id`, `order_id`, `book_id`, `quantity`, `price`) VALUES
-(1, 1, 4, 2, 80000.00),
-(2, 2, 4, 1, 80000.00),
-(3, 3, 3, 1, 90000.00),
-(4, 3, 4, 1, 80000.00),
-(5, 4, 4, 1, 80000.00),
-(6, 5, 4, 1, 80000.00),
-(7, 6, 4, 1, 80000.00),
-(8, 7, 4, 2, 80000.00);
+(11, 10, 8, 1, 116000.00),
+(12, 10, 7, 2, 95000.00),
+(13, 11, 8, 1, 116000.00),
+(14, 12, 7, 1, 95000.00);
 
 -- --------------------------------------------------------
 
@@ -182,6 +239,8 @@ CREATE TABLE `users` (
   `address` text DEFAULT NULL,
   `avatar` varchar(255) DEFAULT NULL,
   `role` enum('admin','user') NOT NULL DEFAULT 'user',
+  `reset_token` varchar(255) DEFAULT NULL,
+  `reset_expired` datetime DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -189,10 +248,10 @@ CREATE TABLE `users` (
 -- Dumping data untuk tabel `users`
 --
 
-INSERT INTO `users` (`id`, `name`, `email`, `password`, `phone`, `address`, `avatar`, `role`, `created_at`) VALUES
-(2, 'Yuki', 'ayushafira2107@gmail.com', '$2y$10$cUmkfIqRBhL21YtlZEn2MOrS3RzdjmZZnDfTnwBCMYdmRDGF6XLI.', '095717063811', 'Jalan Duren besar nomor 45 blok A', 'avatar_2_1773111427.png', 'user', '2026-03-10 00:56:05'),
-(3, 'Administrator', 'admin@bucookie.com', '$2y$10$VJBpE1wKMSD90Sts61Pu0O9cK12d5Fr91n6Ajos3P2dZaUF8Vxzlm', '085697011994', '', 'avatar_3_1773111785.png', 'admin', '2026-03-10 01:03:49'),
-(5, 'Ayu', 'ayusyafira3003@gmail.com', '$2y$10$yFz9jBi6VF8SoxJXVdPCEeJloC7evvqNI7YEDjR5op.oOaj5irSeG', '085697011994', 'Jalan Damai 2 Kota bekasi', NULL, 'user', '2026-03-10 02:14:50');
+INSERT INTO `users` (`id`, `name`, `email`, `password`, `phone`, `address`, `avatar`, `role`, `reset_token`, `reset_expired`, `created_at`) VALUES
+(2, 'Yuki', 'ayushafira2107@gmail.com', '$2y$10$qh4XkPEVlXMzYKFuiWNL8.SC65VRVRZVwfWtFwzLVRubgaGjncwwW', '095717063811', 'Jalan Duren besar nomor 45 blok A', 'avatar_2_1773111427.png', 'user', NULL, NULL, '2026-03-10 00:56:05'),
+(3, 'Administrator', 'admin@bucookie.com', '$2y$10$VJBpE1wKMSD90Sts61Pu0O9cK12d5Fr91n6Ajos3P2dZaUF8Vxzlm', '085697011994', '', 'avatar_3_1773111785.png', 'admin', NULL, NULL, '2026-03-10 01:03:49'),
+(5, 'Ayu', 'ayusyafira3003@gmail.com', '$2y$10$yFz9jBi6VF8SoxJXVdPCEeJloC7evvqNI7YEDjR5op.oOaj5irSeG', '085697011994', 'Jalan Damai 2 Kota bekasi', NULL, 'user', NULL, NULL, '2026-03-10 02:14:50');
 
 --
 -- Indexes for dumped tables
@@ -226,6 +285,18 @@ ALTER TABLE `contact_info`
   ADD PRIMARY KEY (`id`);
 
 --
+-- Indeks untuk tabel `messages`
+--
+ALTER TABLE `messages`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Indeks untuk tabel `notifications`
+--
+ALTER TABLE `notifications`
+  ADD PRIMARY KEY (`id`);
+
+--
 -- Indeks untuk tabel `orders`
 --
 ALTER TABLE `orders`
@@ -255,13 +326,13 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT untuk tabel `books`
 --
 ALTER TABLE `books`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT untuk tabel `cart`
 --
 ALTER TABLE `cart`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
 
 --
 -- AUTO_INCREMENT untuk tabel `categories`
@@ -276,16 +347,28 @@ ALTER TABLE `contact_info`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
+-- AUTO_INCREMENT untuk tabel `messages`
+--
+ALTER TABLE `messages`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+
+--
+-- AUTO_INCREMENT untuk tabel `notifications`
+--
+ALTER TABLE `notifications`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+
+--
 -- AUTO_INCREMENT untuk tabel `orders`
 --
 ALTER TABLE `orders`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
 
 --
 -- AUTO_INCREMENT untuk tabel `order_items`
 --
 ALTER TABLE `order_items`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
 
 --
 -- AUTO_INCREMENT untuk tabel `users`

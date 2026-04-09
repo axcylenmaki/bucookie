@@ -1,12 +1,9 @@
-// Diisi dari PHP via inline script kecil di atas include file ini
-// ORDERS, BASE_URL, STATUS_LABEL sudah didefinisikan sebelumnya
-
 const EXPEDITION_URLS = {
     jne:      "https://www.jne.co.id/id/tracking/trace/",
     jnt:      "https://www.jet.co.id/track/",
     sicepat:  "https://www.sicepat.com/checkAwb/",
     pos:      "https://www.posindonesia.co.id/id/tracking/",
-    tiki:     "https://tiki.id/id/tracking?awb=",
+    tiki:     "https://tiki.id/id/tracking?awb/",
     anteraja: "https://anteraja.id/tracking/",
     ninja:    "https://www.ninjaxpress.co/id-id/tracking?id=",
 };
@@ -92,9 +89,6 @@ function openDetail(id) {
             <span style="font-size:.83rem;color:var(--text-muted)">Total Pembayaran</span>
             <span style="font-size:1.05rem;font-weight:700;color:var(--accent)">${formatRp(o.total_price)}</span>
         </div>
-        <div style="font-size:.72rem;color:var(--text-muted);text-align:right;margin-top:2px">
-            <i class="bi bi-truck"></i> Payment at Delivery
-        </div>
         ${trackingHtml}
     `;
 
@@ -105,13 +99,56 @@ function closeDetail() {
     document.getElementById("detailModal").style.display = "none";
 }
 
-function openModal(id, status) {
-    document.getElementById("modalOrderId").value = id;
-    document.getElementById("modalStatus").value  = status;
-    document.getElementById("modalExpedition").value = ORDERS[id] ? (ORDERS[id].expedition || "") : "";
-    document.getElementById("modalTracking").value   = ORDERS[id] ? (ORDERS[id].tracking_number || "") : "";
+// FUNGSI INI YANG KITA PERBAIKI TOTAL
+function openModal(id, currentStatus) {
+    console.log("Membuka Modal untuk ID:", id, "Status:", currentStatus);
+    
+    const idInput = document.getElementById("modalOrderId");
+    const selectStatus = document.getElementById("modalStatus");
+    
+    if (!idInput || !selectStatus) {
+        console.error("Elemen modal tidak ditemukan di HTML!");
+        return;
+    }
+
+    idInput.value = id;
+    selectStatus.innerHTML = ''; 
+
+    // Daftar status aman
+    const flow = {
+        'pending': ['pending', 'processing', 'cancelled'],
+        'processing': ['processing', 'shipped', 'cancelled'],
+        'shipped': ['shipped', 'delivered'],
+        'delivered': ['delivered'],
+        'cancelled': ['cancelled']
+    };
+
+    // Ambil opsi, jika status aneh, default ke status itu sendiri
+    let options = flow[currentStatus];
+    if (!options) {
+        options = [currentStatus];
+    }
+
+    // Isi Dropdown
+    options.forEach(statusKey => {
+        const opt = document.createElement('option');
+        opt.value = statusKey;
+        opt.textContent = statusKey.charAt(0).toUpperCase() + statusKey.slice(1);
+        if (statusKey === currentStatus) opt.selected = true;
+        selectStatus.appendChild(opt);
+    });
+
+    // Reset dan isi data ekspedisi
+    const orderData = ORDERS[id] || {};
+    const expInput = document.getElementById("modalExpedition");
+    const trackInput = document.getElementById("modalTracking");
+
+    if (expInput) expInput.value = orderData.expedition || "";
+    if (trackInput) trackInput.value = orderData.tracking_number || "";
+    
     toggleTrackingFields();
     updateTrackingLink();
+    
     document.getElementById("statusModal").style.display = "flex";
 }
 
@@ -120,22 +157,25 @@ function closeModal() {
 }
 
 function toggleTrackingFields() {
-    const status = document.getElementById("modalStatus").value;
-    document.getElementById("trackingFields").style.display = status === "shipped" ? "block" : "none";
+    const selectStatus = document.getElementById("modalStatus");
+    const trackDiv = document.getElementById("trackingFields");
+    if (selectStatus && trackDiv) {
+        trackDiv.style.display = selectStatus.value === "shipped" ? "block" : "none";
+    }
 }
 
 function updateTrackingLink() {
-    const exp  = document.getElementById("modalExpedition").value;
-    const resi = document.getElementById("modalTracking").value.trim();
+    const exp = document.getElementById("modalExpedition")?.value;
+    const resi = document.getElementById("modalTracking")?.value.trim();
     const prev = document.getElementById("trackingPreview");
     const link = document.getElementById("trackingLink");
-    const txt  = document.getElementById("trackingLinkText");
+    const txt = document.getElementById("trackingLinkText");
 
     if (exp && resi && EXPEDITION_URLS[exp]) {
-        link.href = EXPEDITION_URLS[exp] + resi.toUpperCase();
-        txt.textContent = "Cek di " + EXPEDITION_NAMES[exp] + " -> " + resi.toUpperCase();
-        prev.style.display = "block";
+        if (link) link.href = EXPEDITION_URLS[exp] + resi.toUpperCase();
+        if (txt) txt.textContent = "Cek di " + EXPEDITION_NAMES[exp] + " -> " + resi.toUpperCase();
+        if (prev) prev.style.display = "block";
     } else {
-        prev.style.display = "none";
+        if (prev) prev.style.display = "none";
     }
 }

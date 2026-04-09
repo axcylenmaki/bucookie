@@ -4,7 +4,8 @@ require_once __DIR__ . '/../config/db.php';
 
 // Redirect jika sudah login
 if (isset($_SESSION['user_id'])) {
-    header('Location: ' . BASE_URL . ($_SESSION['user_role'] === 'admin' ? 'admin/index.php' : 'index.php'));    exit;
+    header('Location: ' . BASE_URL . ($_SESSION['user_role'] === 'admin' ? 'admin/index.php' : 'index.php'));
+    exit;
 }
 
 $error = '';
@@ -165,6 +166,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         .mb-field { margin-bottom: 18px; }
 
+        /* Link Forgot Password */
+        .forgot-link-wrap {
+            text-align: right;
+            margin-top: -12px;
+            margin-bottom: 20px;
+        }
+
+        .forgot-link-wrap a {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: color .2s;
+        }
+
+        .forgot-link-wrap a:hover {
+            color: var(--accent);
+            text-decoration: underline;
+        }
+
         .btn-submit {
             width: 100%;
             padding: 11px;
@@ -299,6 +319,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <i class="bi bi-eye" id="eyeIcon"></i>
                     </button>
                 </div>
+            </div>
+
+            <div class="forgot-link-wrap">
+                <a href="<?= BASE_URL ?>auth/forgot-password.php">Lupa password?</a>
             </div>
 
             <button type="submit" class="btn-submit">

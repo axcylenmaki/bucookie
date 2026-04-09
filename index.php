@@ -18,7 +18,6 @@ if (isLoggedIn()) {
 require_once 'includes/header.php';
 ?>
 
-<!-- HERO -->
 <section class="hero">
     <div class="hero-eyebrow">Selamat Datang</div>
     <h1>Temukan buku <em>favoritmu</em> di sini.</h1>
@@ -43,7 +42,6 @@ require_once 'includes/header.php';
     </div>
 </section>
 
-<!-- CATEGORY PILLS -->
 <?php
 $active_cat = isset($_GET['category']) ? (int)$_GET['category'] : 0;
 $cat_query  = $conn->query("SELECT id, name FROM categories ORDER BY name ASC");
@@ -58,7 +56,6 @@ $cat_query  = $conn->query("SELECT id, name FROM categories ORDER BY name ASC");
     <?php endwhile; ?>
 </div>
 
-<!-- BOOKS SECTION -->
 <div class="section-header">
     <div class="section-title">Buku Terbaru</div>
     <a href="<?= BASE_URL ?>pages/books.php" class="section-link">
@@ -97,6 +94,7 @@ $cat_query  = $conn->query("SELECT id, name FROM categories ORDER BY name ASC");
                 <span>No Cover</span>
             </div>
             <?php endif; ?>
+            
             <?php
             $diff = (new DateTime())->diff(new DateTime($book['created_at']))->days;
             if ($diff <= 30):
@@ -110,18 +108,30 @@ $cat_query  = $conn->query("SELECT id, name FROM categories ORDER BY name ASC");
             <div class="book-author"><?= htmlspecialchars($book['author']) ?></div>
             <div class="book-footer">
                 <div class="book-price">Rp <?= number_format($book['price'], 0, ',', '.') ?></div>
+                
                 <?php if ($book['stock'] > 0): ?>
-                <a href="<?= BASE_URL ?>pages/cart.php?add=<?= $book['id'] ?>"
-                   class="btn-cart"
-                   onclick="event.stopPropagation()"
-                   title="Tambah ke keranjang">
-                    <i class="bi bi-cart-plus"></i>
-                </a>
+                    <?php 
+                        // Cek status login untuk menentukan link keranjang
+                        if (isLoggedIn()) {
+                            $cart_link = BASE_URL . "pages/cart.php?add=" . $book['id'];
+                            $cart_title = "Tambah ke keranjang";
+                        } else {
+                            $cart_link = BASE_URL . "auth/login.php";
+                            $cart_title = "Login terlebih dahulu untuk membeli";
+                        }
+                    ?>
+                    <a href="<?= $cart_link ?>"
+                       class="btn-cart"
+                       onclick="event.stopPropagation()"
+                       title="<?= $cart_title ?>">
+                        <i class="bi bi-cart-plus"></i>
+                    </a>
                 <?php else: ?>
-                <span class="btn-cart" style="opacity:.4;cursor:not-allowed" title="Stok habis">
-                    <i class="bi bi-x-lg"></i>
-                </span>
+                    <span class="btn-cart" style="opacity:.4;cursor:not-allowed" title="Stok habis">
+                        <i class="bi bi-x-lg"></i>
+                    </span>
                 <?php endif; ?>
+
             </div>
         </div>
     </a>
